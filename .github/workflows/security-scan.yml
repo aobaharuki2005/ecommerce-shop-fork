@@ -1,0 +1,120 @@
+name: Quét bảo mật tự động với Trivy và SonarQube
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  pull-requests: write
+  contents: read
+  security-events: write
+
+jobs:
+  sonarqube:
+    name: SonarQube
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # --- JOB 2: QUÉT THƯ VIỆN (SCA) VỚI TRIVY ---
+  trivy-scan:
+    name: Trivy Dependency Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy (JSON Output)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          format: 'json'
+          output: 'trivy_report.json'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Analyze Results & Set Status
+        id: analyze
+        run: |
+          VULN_COUNT=$(jq '[.Results[].Vulnerabilities[]?] | length' trivy_report.json)
+          echo "VULN_COUNT=$VULN_COUNT" >> $GITHUB_ENV
+          if [ "$VULN_COUNT" -gt 0 ]; then
+            echo "SCAN_STATUS=❌ PHÁT HIỆN $VULN_COUNT LỖ HỔNG (CRITICAL/HIGH)." >> $GITHUB_ENV
+          else
+            echo "SCAN_STATUS=✅ Project an toàn. Không tìm thấy lỗ hổng nghiêm trọng." >> $GITHUB_ENV
+          fi
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: mshick/add-pr-comment@v2
+        with:
+          message: |
+            ## Kết quả quét bảo mật Trivy (SCA):
+            - **Trạng thái:** ${{ env.SCAN_STATUS }}
+            - **Tổng số lỗ hổng (CRITICAL/HIGH):** `${{ env.VULN_COUNT }}`
+            
+            🔗 [Nhấn vào đây để xem chi tiết và tải báo cáo HTML](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            *Ghi chú: Nếu có lỗ hổng, vui lòng kiểm tra mục **Artifacts** ở cuối trang link bên trên.*
+
+      - name: Generate HTML Report
+        if: always()
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          format: 'template'
+          template: "@$HOME/.local/bin/trivy-bin/contrib/html.tpl"
+          output: 'trivy_report.html'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            trivy_report.html
+            trivy_report.json
+
+      - name: Fail Pipeline if Vulns Found
+        if: always()
+        run: |
+          if [ "${{ env.VULN_COUNT }}" -gt 0 ]; then
+            exit 1
+          fi
+
+# --- JOB 3: GỬI THÔNG BÁO EMAIL KHI CÓ LỖI ---
+  notify-failure:
+    name: Notify Failure
+    runs-on: ubuntu-latest
+    # Job này cần kết quả từ 2 job trước
+    needs: [sonarqube, trivy-scan]
+    # Chỉ chạy nếu có ít nhất 1 job thất bại (failure)
+    if: failure()
+    steps:
+      - name: Send Mail
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "⚠️ CẢNH BÁO: Bảo mật thất bại tại ${{ github.repository }}"
+          to: tranbaohnth@outlook.com.vn
+          from: GitHub Security Watcher
+          body: |
+            Phát hiện lỗi bảo mật hoặc mã nguồn không đạt chuẩn!
+            
+            - Project: ${{ github.repository }}
+            - Nhánh: ${{ github.ref_name }}
+            - Trạng thái SonarQube: ${{ needs.sonarqube.result }}
+            - Trạng thái Trivy: ${{ needs.trivy-scan.result }}
+            
+            Chi tiết tại: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
