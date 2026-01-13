@@ -7,9 +7,7 @@ on:
     branches: [ main, develop ]
 
 permissions:
-  pull-requests: write
   contents: read
-  security-events: write
 
 jobs:
   sonarqube:
@@ -27,6 +25,9 @@ jobs:
 
   # --- JOB 2: QUÉT THƯ VIỆN (SCA) VỚI TRIVY ---
   trivy-scan:
+    permissions:
+      pull-requests: write
+      security-events: write
     name: Trivy Dependency Scan
     runs-on: ubuntu-latest
     steps:
