@@ -2,9 +2,9 @@ name: Quét bảo mật tự động với Trivy và SonarQube
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, master ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, master ]
 
   
 
