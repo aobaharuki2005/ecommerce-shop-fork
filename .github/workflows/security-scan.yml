@@ -6,8 +6,7 @@ on:
   pull_request:
     branches: [ main, develop ]
 
-permissions:
-  contents: read
+  
 
 jobs:
   sonarqube:
@@ -28,6 +27,7 @@ jobs:
     permissions:
       pull-requests: write
       security-events: write
+      contents: read
     name: Trivy Dependency Scan
     runs-on: ubuntu-latest
     steps:
