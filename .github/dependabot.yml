@@ -1,0 +1,59 @@
+version: 2
+updates:
+  # Cấu hình cho NPM (root folder)
+  - package-ecosystem: "npm"
+    directory: "/"
+    target-branch: "develop"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-type: "all"
+    open-pull-requests-limit: 10 # Giảm từ 20 xuống 10 (đủ cho 2 nhóm update)
+    
+    # Gom nhóm các bản cập nhật
+    groups:
+      root-minor-and-patch: # Tên nhóm unique cho root
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch" 
+      root-major: # Tên nhóm unique cho root
+        applies-to: version-updates
+        update-types:
+          - "major"
+    
+    labels:
+      - "root-side"
+      - "dependencies"
+      - "automated-pr"
+    
+    # Tự động rebase khi có conflict
+    rebase-strategy: "auto"
+
+  # Cấu hình cho NPM (server folder)
+  - package-ecosystem: "npm"
+    directory: "/server"
+    target-branch: "develop"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-type: "all"
+    open-pull-requests-limit: 10
+    
+    groups:
+      server-minor-and-patch: # Tên nhóm unique cho server
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+      server-major: # Tên nhóm unique cho server
+        applies-to: version-updates
+        update-types:
+          - "major"
+    
+    labels:
+      - "server-side"
+      - "dependencies"
+      - "automated-pr"
+    
+    rebase-strategy: "auto"
