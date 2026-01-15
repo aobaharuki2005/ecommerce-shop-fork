@@ -157,7 +157,7 @@ jobs:
           exit-code: '1'  # Trả về lỗi (Fail job) nếu tìm thấy lỗ hổng
           ignore-unfixed: true
           vuln-type: 'os,library'
-          severity: 'CRITICAL, HIGH'
+          severity: 'CRITICAL,HIGH'
         continue-on-error: true
       
       # Lưu kết quả quét vào mục Artifact
