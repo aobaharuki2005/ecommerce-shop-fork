@@ -1,8 +1,11 @@
 # Sử dụng Node.js phiên bản 24
-FROM node:24-bullseye
+# FROM node:24-bullseye
+FROM node:24-alpine
 
 # Cập nhật hệ thống và cài đặt các công cụ cần thiết
-RUN apt-get update && apt-get upgrade -y && apt-get install -y netcat-openbsd
+# RUN apt-get update && apt-get upgrade -y && apt-get install -y netcat-openbsd
+# Mới (Alpine)
+RUN apk add --no-cache netcat-openbsd
 
 # Khai báo thư mục làm việc
 WORKDIR /app
