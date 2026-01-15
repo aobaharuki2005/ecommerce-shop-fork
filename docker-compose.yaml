@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # Container tên 'web', chạy mã nguồn web
+  web:
+    build: .
+    container_name: ecommerce-shop-fork
+    ports:
+      - "3000:3000" # Frontend
+      - "3001:3001" # Backend
+    environment:
+      - DATABASE_URL=mysql://root:root@db:3306/singitronic_nextjs?sslmode=disabled
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
+      - NODE_ENV=development
+      - NEXTAUTH_SECRET=12D16C923BA17672F89B18C1DB22A
+      - NEXTAUTH_URL=http://localhost:3000
+    depends_on:
+      - db
+    networks:
+      - app-network
+  
+  # Container chạy MySQL
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=singitronic_nextjs
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/Users/test/.local/mysql
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+
