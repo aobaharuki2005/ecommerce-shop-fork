@@ -156,7 +156,7 @@ jobs:
           output: 'trivy_build_report.html'
           exit-code: '1'  # Trả về lỗi (Fail job) nếu tìm thấy lỗ hổng
           ignore-unfixed: true
-          vuln-type: 'os, library'
+          vuln-type: 'os,library'
           severity: 'CRITICAL, HIGH'
         continue-on-error: true
       
